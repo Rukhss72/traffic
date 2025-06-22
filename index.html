@@ -1,47 +1,88 @@
+https://github.com/Rukhss72/traffic/blob/main/esp_emergency.txt
+
 <!DOCTYPE html>
 <html>
 <head>
-  <title>ESP32 Emergency Control (Google Sheet)</title>
+  <meta charset="UTF-8">
+  <title>ESP32 Emergency Control</title>
   <style>
-    body { font-family: sans-serif; text-align: center; margin-top: 50px; }
-    button { font-size: 1.2rem; margin: 10px; padding: 15px; }
-    .status { font-size: 1.5rem; margin: 20px; }
+    body { font-family: sans-serif; text-align: center; margin-top: 60px; }
+    h1 { color: #333; }
+    .status {
+      font-size: 2.5rem;
+      font-weight: bold;
+      margin: 30px;
+    }
+    .edit-btn {
+      font-size: 1.3rem;
+      padding: 18px 30px;
+      border-radius: 10px;
+      background: #2874A6;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-bottom: 25px;
+      margin-top: 15px;
+      box-shadow: 0 4px 12px rgba(40,116,166,0.13);
+      transition: background 0.2s;
+    }
+    .edit-btn:hover { background: #185480; }
+    .info { margin: 20px; color: #666; }
+    .github-link { color: #2874A6; text-decoration: none; }
   </style>
 </head>
 <body>
   <h1>ESP32 Emergency Control Panel</h1>
-  <div class="status" id="status">Loading status...</div>
-  <button onclick="triggerEmergency()">Trigger Emergency</button>
-  <button onclick="resetEmergency()">Reset</button>
-  <br><br>
-  <small>Backend: Google Sheets via Apps Script API</small>
+  <div id="status" class="status">Loading...</div>
+  <a id="editLink" href="#" target="_blank">
+    <button class="edit-btn">Edit Emergency Status</button>
+  </a>
+  <div class="info">
+    <span>
+      This dashboard shows the live status from the GitHub file.<br>
+      <a id="viewLink" class="github-link" href="#" target="_blank">View raw file</a>
+    </span>
+    <br><br>
+    <span>
+      <b>How to use:</b> Click "Edit Emergency Status". Set file to <code>1</code> for <b style="color:red">EMERGENCY</b>, <code>0</code> for <b style="color:green">NORMAL</b>. Save commit.<br>
+      Your ESP32 will check for the change every few seconds!
+    </span>
+  </div>
   <script>
-    const api = "https://script.google.com/macros/s/AKfycbwGDo3aRZ0Hh__HbGGAXapvV7VXmnjzPLQqImEfGCU_tEz3dT0BbeMyPK642_r0fO2txw/exec";
+    // --- Replace these with your info! ---
+    const githubUser = "Rukhss72";
+    const githubRepo = "traffic";
+    const branch = "main"; // or "master" if that's your default
+    const filename = "esp_emergency.txt";
+    // --------------------------------------
 
-    function fetchStatus() {
-      fetch(api + "?action=status")
+    const rawURL = `https://raw.githubusercontent.com/${githubUser}/${githubRepo}/${branch}/${filename}`;
+    const editURL = `https://github.com/${githubUser}/${githubRepo}/edit/${branch}/${filename}`;
+    const viewURL = `https://github.com/${githubUser}/${githubRepo}/blob/${branch}/${filename}`;
+
+    document.getElementById('editLink').href = editURL;
+    document.getElementById('viewLink').href = viewURL;
+
+    function updateStatus() {
+      fetch(rawURL + `?${Date.now()}`) // cache buster
         .then(r => r.text())
-        .then(v => {
-          document.getElementById('status').innerHTML =
-            v.trim() == "1" ?
-            "<span style='color:red;'>EMERGENCY</span>" :
-            "<span style='color:green;'>NORMAL</span>";
+        .then(text => {
+          const val = text.trim();
+          if (val === "1") {
+            document.getElementById('status').innerHTML = "<span style='color:red'>EMERGENCY 🚨</span>";
+          } else if (val === "0") {
+            document.getElementById('status').innerHTML = "<span style='color:green'>NORMAL</span>";
+          } else {
+            document.getElementById('status').innerHTML = "<span style='color:gray'>Unknown ("+val+")</span>";
+          }
+        })
+        .catch(() => {
+          document.getElementById('status').innerHTML = "<span style='color:gray'>Unable to load</span>";
         });
     }
 
-    function triggerEmergency() {
-      fetch(api + "?action=emergency")
-        .then(() => fetchStatus());
-    }
-
-    function resetEmergency() {
-      fetch(api + "?action=reset")
-        .then(() => fetchStatus());
-    }
-
-    // Initial fetch and periodic refresh
-    fetchStatus();
-    setInterval(fetchStatus, 3000);
+    updateStatus();
+    setInterval(updateStatus, 3500); // Update every 3.5s
   </script>
 </body>
 </html>
