@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ESP32 Emergency Control (Google Sheet)</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 50px; }
+    button { font-size: 1.2rem; margin: 10px; padding: 15px; }
+    .status { font-size: 1.5rem; margin: 20px; }
+  </style>
+</head>
+<body>
+  <h1>ESP32 Emergency Control Panel</h1>
+  <div class="status" id="status">Loading status...</div>
+  <button onclick="triggerEmergency()">Trigger Emergency</button>
+  <button onclick="resetEmergency()">Reset</button>
+  <br><br>
+  <small>Backend: Google Sheets via Apps Script API</small>
+  <script>
+    const api = "https://script.google.com/macros/s/AKfycbwGDo3aRZ0Hh__HbGGAXapvV7VXmnjzPLQqImEfGCU_tEz3dT0BbeMyPK642_r0fO2txw/exec";
+
+    function fetchStatus() {
+      fetch(api + "?action=status")
+        .then(r => r.text())
+        .then(v => {
+          document.getElementById('status').innerHTML =
+            v.trim() == "1" ?
+            "<span style='color:red;'>EMERGENCY</span>" :
+            "<span style='color:green;'>NORMAL</span>";
+        });
+    }
+
+    function triggerEmergency() {
+      fetch(api + "?action=emergency")
+        .then(() => fetchStatus());
+    }
+
+    function resetEmergency() {
+      fetch(api + "?action=reset")
+        .then(() => fetchStatus());
+    }
+
+    // Initial fetch and periodic refresh
+    fetchStatus();
+    setInterval(fetchStatus, 3000);
+  </script>
+</body>
+</html>
